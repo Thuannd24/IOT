@@ -17,3 +17,6 @@ Thumbs.db
 # Images maybe large
 *.jpg
 *.png
+
+# Node.js
+node_modules/
