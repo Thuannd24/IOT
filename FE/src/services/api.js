@@ -1,44 +1,40 @@
-import axios from 'axios';
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const API_URL = 'http://localhost:5000/api'; // URL backend của bạn
+export async function apiGet(path) {
+  const res = await fetch(`${API}${path}`);
+  if (!res.ok) throw new Error(`GET ${path} ${res.status}`);
+  return res.json();
+}
 
-const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+export async function apiJson(path, method, body) {
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  if (!res.ok) throw new Error(`${method} ${path} ${res.status}`);
+  return res.json();
+}
 
-// Thêm token vào header
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
-export const studentAPI = {
-    getAll: () => api.get('/students'),
-    getById: (id) => api.get(`/students/${id}`),
-    create: (data) => api.post('/students', data),
-    update: (id, data) => api.put(`/students/${id}`, data),
-    delete: (id) => api.delete(`/students/${id}`),
-    uploadImage: (id, formData) => api.post(`/students/${id}/image`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    }),
+// Students
+export const StudentsAPI = {
+  list: () => apiGet('/api/students'),
+  create: (payload) => apiJson('/api/students', 'POST', payload),
+  update: (id, payload) => apiJson(`/api/students/${id}`, 'PUT', payload),
+  remove: (id) => apiJson(`/api/students/${id}`, 'DELETE'),
 };
 
-export const attendanceAPI = {
-    getAll: (params) => api.get('/attendance', { params }),
-    getByDate: (date) => api.get(`/attendance/date/${date}`),
-    mark: (data) => api.post('/attendance', data),
+// Attendance
+export const AttendanceAPI = {
+  list: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return apiGet(`/api/attendance${q ? `?${q}` : ''}`);
+  },
+  checkin: (studentId, status='present') => apiJson('/api/attendance/checkin', 'POST', { studentId, status }),
 };
 
-export const cameraAPI = {
-    getStatus: () => api.get('/camera/status'),
-    startRecognition: () => api.post('/camera/start'),
-    stopRecognition: () => api.post('/camera/stop'),
+// Recognitions
+export const RecognitionsAPI = {
+  recent: (limit=20) => apiGet(`/api/recognitions?limit=${limit}`),
+  health: () => apiGet('/api/health'),
 };
-
-export default api;
