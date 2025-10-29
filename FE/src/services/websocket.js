@@ -1,39 +1,21 @@
-import { io } from 'socket.io-client';
+import { io } from "socket.io-client";
 
-const SOCKET_URL = 'http://localhost:5000';
-
-class WebSocketService {
-    constructor() {
-        this.socket = null;
-    }
-
-    connect() {
-        this.socket = io(SOCKET_URL, {
-            transports: ['websocket'],
-        });
-
-        this.socket.on('connect', () => {
-            console.log('WebSocket connected');
-        });
-
-        this.socket.on('disconnect', () => {
-            console.log('WebSocket disconnected');
-        });
-    }
-
-    onFaceDetected(callback) {
-        this.socket.on('face_detected', callback);
-    }
-
-    onAttendanceMarked(callback) {
-        this.socket.on('attendance_marked', callback);
-    }
-
-    disconnect() {
-        if (this.socket) {
-            this.socket.disconnect();
-        }
-    }
+let socket;
+export function connectWS() {
+  if (socket) return socket;
+  const url = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+  socket = io(url, { transports: ['websocket'], path: '/socket.io/' });
+  return socket;
 }
 
-export default new WebSocketService();
+export function onRecognition(cb) {
+  const s = connectWS();
+  s.on('connect', () => console.log('[WS] connected', s.id));
+  s.on('recognition', (payload) => cb && cb(payload));
+  s.on('disconnect', () => console.log('[WS] disconnected'));
+}
+
+export function disconnectWS() {
+  if (socket) socket.disconnect();
+  socket = null;
+}
