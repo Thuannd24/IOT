@@ -16,7 +16,8 @@ SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
 # allow CORS for dev; tighten in prod
 
 # cors_allowed_origins='*' for dev; set to FE origin in prod
