@@ -10,7 +10,10 @@ from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 # ----------------------
 # App & DB setup
 # ----------------------
-DB_URL = os.environ.get("DB_URL", "sqlite:///attendance.db")
+DB_URL = os.environ.get(
+    "DB_URL",
+    "mysql+pymysql://root:123456@localhost/iotmain"
+)
 engine = create_engine(DB_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
