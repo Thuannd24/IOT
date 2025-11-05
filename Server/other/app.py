@@ -1,11 +1,18 @@
 from datetime import datetime
 import os
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
+from werkzeug.utils import secure_filename
+
+
+BASE_DIR   = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+AVATAR_DIR = os.path.join(UPLOAD_DIR, "avatars")
+os.makedirs(AVATAR_DIR, exist_ok=True)
 
 # ----------------------
 # App & DB setup
@@ -19,7 +26,6 @@ SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
 app = Flask(__name__)
-CORS(app)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
 # allow CORS for dev; tighten in prod
 
@@ -32,8 +38,10 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 class Student(Base):
     __tablename__ = 'students'
     id = Column(Integer, primary_key=True)
+    student_code = Column(String(64), nullable=False)
     name = Column(String(120), nullable=False)
     class_name = Column(String(120), default="")
+    avatar_url = Column(String(255), default="") 
     created_at = Column(DateTime, default=datetime.utcnow)
     attendances = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
 
@@ -66,21 +74,135 @@ def list_students():
     with SessionLocal() as db:
         q = db.query(Student).order_by(Student.id.desc()).all()
         return jsonify([
-            {"id": s.id, "name": s.name, "className": s.class_name, "createdAt": s.created_at.isoformat()} for s in q
+            {
+                "id": s.id,
+                "studentCode": s.student_code,
+                "name": s.name,
+                "className": s.class_name,
+                "avatarUrl": s.avatar_url,
+                "createdAt": s.created_at.isoformat()
+            } for s in q
         ])
 
 @app.post('/api/students')
 def create_student():
+    # if request.content_type and request.content_type.startswith('multipart/form-data'):
+    # student_code = (request.form.get('studentCode') or '').strip()
+    # name = (request.form.get('name') or '').strip()
+    # class_name = (request.form.get('className') or '').strip()
+    # if not student_code or not name:
+    #     return jsonify({"error":"studentCode and name are required"}), 400
+    # avatar_url = ""
+    # if 'avatar' in request.files and request.files['avatar']:
+    #     f = request.files['avatar']
+    #     fname = datetime.utcnow().strftime('%Y%m%d%H%M%S') + '_' + secure_filename(f.filename)
+    #     f.save(os.path.join(AVATAR_DIR, fname))
+    #     avatar_url = f"/uploads/avatars/{fname}"
+    # with SessionLocal() as db:
+    #     if db.query(Student).filter(Student.student_code==student_code).first():
+    #         return jsonify({"error":"studentCode already exists"}), 409
+    #     s = Student(student_code=student_code, name=name, class_name=class_name, avatar_url=avatar_url)
+    #     db.add(s); db.commit()
+    #     return jsonify({"id": s.id, "studentCode": s.student_code, "name": s.name, "className": s.class_name, "avatarUrl": s.avatar_url}), 201
+    # else:
+    #     data = request.json or {}
+    #     student_code = (data.get('studentCode') or '').strip()
+    #     name = (data.get('name') or '').strip()
+    #     class_name = (data.get('className') or '').strip()
+    #     if not student_code or not name:
+    #         return jsonify({"error":"studentCode and name are required"}), 400
+    #     with SessionLocal() as db:
+    #         if db.query(Student).filter(Student.student_code==student_code).first():
+    #             return jsonify({"error":"studentCode already exists"}), 409
+    #         s = Student(student_code=student_code, name=name, class_name=class_name)
+    #         db.add(s)
+    #         db.commit()
+    #         return jsonify({"id": s.id, "studentCode": s.student_code, "name": s.name, "className": s.class_name, "avatarUrl": s.avatar_url}), 201
+    # data = request.json or {}
+    # name = data.get('name')
+    # class_name = data.get('className', "")
+    # if not name:
+    #     return jsonify({"error": "name is required"}), 400
+    # with SessionLocal() as db:
+    #     s = Student(name=name, class_name=class_name)
+    #     db.add(s)
+    #     db.commit()
+    #     return jsonify({"id": s.id, "name": s.name, "className": s.class_name}), 201
+    
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        student_code = (request.form.get('studentCode') or '').strip()
+        name = (request.form.get('name') or '').strip()
+        class_name = (request.form.get('className') or '').strip()
+
+        if not student_code or not name:
+            return jsonify({"error": "studentCode and name are required"}), 400
+
+        avatar_url = ""
+        if 'avatar' in request.files and request.files['avatar']:
+            f = request.files['avatar']
+            if f.filename:
+                fname = datetime.utcnow().strftime('%Y%m%d%H%M%S') + '_' + secure_filename(f.filename)
+                f.save(os.path.join(AVATAR_DIR, fname))
+                avatar_url = f"/uploads/avatars/{fname}"
+
+        with SessionLocal() as db:
+            # kiểm tra trùng mã sinh viên
+            if db.query(Student).filter(Student.student_code == student_code).first():
+                return jsonify({"error": "studentCode already exists"}), 409
+
+            s = Student(
+                student_code=student_code,
+                name=name,
+                class_name=class_name,
+                avatar_url=avatar_url,
+            )
+            db.add(s)
+            db.commit()
+            return jsonify({
+                "id": s.id,
+                "studentCode": s.student_code,
+                "name": s.name,
+                "className": s.class_name,
+                "avatarUrl": s.avatar_url
+            }), 201
+
+    # Nếu là JSON (không gửi file)
     data = request.json or {}
-    name = data.get('name')
-    class_name = data.get('className', "")
-    if not name:
-        return jsonify({"error": "name is required"}), 400
+    student_code = (data.get('studentCode') or '').strip()
+    name = (data.get('name') or '').strip()
+    class_name = (data.get('className') or '').strip()
+
+    if not student_code or not name:
+        return jsonify({"error": "studentCode and name are required"}), 400
+
     with SessionLocal() as db:
-        s = Student(name=name, class_name=class_name)
+        if db.query(Student).filter(Student.student_code == student_code).first():
+            return jsonify({"error": "studentCode already exists"}), 409
+
+        s = Student(student_code=student_code, name=name, class_name=class_name)
         db.add(s)
         db.commit()
-        return jsonify({"id": s.id, "name": s.name, "className": s.class_name}), 201
+        return jsonify({
+            "id": s.id,
+            "studentCode": s.student_code,
+            "name": s.name,
+            "className": s.class_name,
+            "avatarUrl": s.avatar_url
+        }), 201
+
+@app.post('/api/students/<int:sid>/avatar')
+def upload_avatar(sid):
+    if 'avatar' not in request.files: return jsonify({"error":"avatar file is required"}), 400
+    f = request.files['avatar']
+    if not f.filename: return jsonify({"error":"empty filename"}), 400
+    fname = datetime.utcnow().strftime('%Y%m%d%H%M%S') + '_' + secure_filename(f.filename)
+    f.save(os.path.join(AVATAR_DIR, fname))
+    url = f"/uploads/avatars/{fname}"
+    with SessionLocal() as db:
+        s = db.get(Student, sid)
+        if not s: return jsonify({"error":"not found"}), 404
+        s.avatar_url = url; db.commit()
+        return jsonify({"ok": True, "avatarUrl": url})
 
 @app.put('/api/students/<int:sid>')
 def update_student(sid):
@@ -93,6 +215,11 @@ def update_student(sid):
         s.class_name = data.get('className', s.class_name)
         db.commit()
         return jsonify({"id": s.id, "name": s.name, "className": s.class_name})
+    
+@app.get('/uploads/avatars/<path:path>')
+def serve_avatar(path):
+    # Tránh truy cập ra ngoài thư mục
+    return send_from_directory(AVATAR_DIR, path)
 
 @app.delete('/api/students/<int:sid>')
 def delete_student(sid):
