@@ -1,21 +1,21 @@
 import os
 import cv2
 import face_recognition
-import requests
+# import requests
 import json
 
 # Folder chứa ảnh mới
-folder_path = "new_faces"
+NEW_FACES_FOLDER = os.path.join("static", "students")
 
 # URL Flask server
 url = "http://127.0.0.1:5000/add_student"
 
 # Lặp qua tất cả ảnh trong folder
-for file_name in os.listdir(folder_path):
+for file_name in os.listdir(NEW_FACES_FOLDER):
     if not (file_name.endswith(".jpg") or file_name.endswith(".png")):
         continue
 
-    image_path = os.path.join(folder_path, file_name)
+    image_path = os.path.join(NEW_FACES_FOLDER, file_name)
     print("Processing:", image_path)
 
     # Load ảnh
@@ -39,6 +39,7 @@ for file_name in os.listdir(folder_path):
     }
 
     # Gửi POST lên server
-    response = requests.post(url, json=payload)
-    print(response.status_code)
-    print(response.json())
+    # response = requests.post(url, json=payload)
+    # print(response.status_code)
+    # print(response.json())
+    print("Đã gửi dữ liệu sinh viên:", name)

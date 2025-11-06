@@ -8,7 +8,6 @@ import os
 from werkzeug.utils import secure_filename
 import traceback
 from PIL import Image
-import datetime
 
 NEW_FACES_FOLDER = os.path.join("static", "students")  # folder chứa ảnh gốc sinh viên
 ATTENDANCE_FACES_FOLDER = os.path.join("static", "attendance_faces")  # folder lưu ảnh điểm danh
@@ -34,14 +33,13 @@ def load_known_faces():
         charset='utf8mb4'
     )
     cursor = conn.cursor()
-    cursor.execute("SELECT id, msv, full_name, encoding FROM students")
+    cursor.execute("SELECT msv, full_name, encoding FROM students")
     data = cursor.fetchall()
     conn.close()
 
     known_names, known_encodings = [], []
-    for id, studentCode, full_name, encoding_str in data:
+    for studentCode, full_name, encoding_str in data:
         student_obj = {
-            "id": id,
             "studentCode": studentCode,
             "full_name": full_name
         }
@@ -154,10 +152,12 @@ def upload_image():
         # Resize ảnh SVGA 800x600 → 320x240 để nhanh hơn
         small_frame = cv2.resize(frame, (320,240))
 
+        cv2.imwrite("RECEIVED_face.jpg", small_frame)
+        print("✅ Ảnh đã được lưu ra RECEIVED_face.jpg")
+
         # Detect mặt bằng HOG model
         face_locations = face_recognition.face_locations(small_frame, model='hog')
         results_list = []
-        resp = {}
 
         for (top, right, bottom, left) in face_locations:
             # Kiểm tra tọa độ tránh vượt quá kích thước ảnh
@@ -165,6 +165,9 @@ def upload_image():
             left = max(left, 0)
             bottom = min(bottom, small_frame.shape[0])
             right = min(right, small_frame.shape[1])
+
+            # Debug: lưu ảnh mặt được detect
+            cv2.imwrite("DEBUG_face.jpg", small_frame[top:bottom, left:right])
 
             # Encode trực tiếp trên small_frame với location đã detect
             encodings = face_recognition.face_encodings(
@@ -175,7 +178,7 @@ def upload_image():
             live_encoding = encodings[0]
 
             # So sánh với database
-            matches = face_recognition.compare_faces(known_encodings, live_encoding, tolerance=0.55)
+            matches = face_recognition.compare_faces(known_encodings, live_encoding, tolerance=0.6)
             recognized = False
             full_name = "Unknown"
             studentCode = "Unknown"
@@ -183,7 +186,6 @@ def upload_image():
                 idx = matches.index(True)
                 full_name = known_names[idx]["full_name"]
                 studentCode = known_names[idx]["studentCode"]
-                id = known_names[idx]["id"] 
                 recognized = True  # mặt có trong database
 
             results_list.append({
@@ -193,116 +195,17 @@ def upload_image():
                 "recognized": recognized
             })
             
-        
-
-            # === GỌI HÀM LƯU ĐIỂM DANH ===
-            face_image_path = os.path.join(ATTENDANCE_FACES_FOLDER, f"{studentCode}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-            os.makedirs(ATTENDANCE_FACES_FOLDER, exist_ok=True)
-            cv2.imwrite(face_image_path, small_frame[top:bottom, left:right])
-
-            # Lưu vào DB
-            if(recognized):
-                resp = save_attendance(id, studentCode, face_image_path, confidence=70.0)
-            else:
-                resp = {"status": "unknown", "message": "Khuon mat chua duoc dang ky.", "faces": []}
-        
-        if not face_locations:
-            resp = {"status": "error", "message": "Khong nhan dien duoc khuon mat", "faces": []}
-        else:
-            # Thêm thông tin face vào resp
-            resp["faces"] = results_list
+            response_json = {"status": "ok", "faces": results_list}
+            print("Response JSON: ", response_json)
 
         return Response(
-        json.dumps(resp, ensure_ascii=False),
+        json.dumps(response_json, ensure_ascii=False),
         content_type="application/json; charset=utf-8")
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"status":"error", "message": str(e)}), 500
-
-
-
-# ======================
-# Hàm lưu điểm danh
-# ======================
-def save_attendance(id, student_code, recognized_face_image_path, confidence=50.0):
-    """
-    Lưu bản ghi điểm danh vào database theo ca (sáng/chiều)
-    """
-    try:
-        now = datetime.datetime.now()
-        today = now.date()
-        current_time = now.time()
-
-        # Xác định ca điểm danh
-        session_name = "Sáng" if current_time < datetime.time(12, 0, 0) else "Chiều"
-
-        conn = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='mysql123',
-            database='attendance',
-            charset='utf8mb4'
-        )
-        cursor = conn.cursor(dictionary=True)
-
-        student_id = id
-
-        # Lấy ca điểm danh hiện tại
-        cursor.execute("""
-            SELECT id, start_time, end_time 
-            FROM attendance_sessions 
-            WHERE date = %s AND session_name = %s
-        """, (today, session_name))
-        session = cursor.fetchone()
-        conn.close()
-
-
-        if not session:
-            return {"status": "wait", "message": "Hien tai khong co ca diem danh."}
-
-
-        session_id = session["id"]
-
-        # Xác định trạng thái (điểm danh đúng giờ hay trễ)
-        start_time = datetime.datetime.combine(now.date(), session["start_time"])
-        end_time = datetime.datetime.combine(now.date(), session["end_time"])
-        if( current_time < start_time):
-            return {"status": "wait", "message": "Chua den ca diem danh."}
-        
-        status = "present" if current_time <= end_time else "late"
-
-        # Kiểm tra đã điểm danh chưa
-        cursor.execute("""
-            SELECT id FROM attendance_records
-            WHERE student_id = %s AND session_id = %s
-        """, (student_id, session_id))
-        already = cursor.fetchone()
-        if already:
-            print(f"Sinh vien {student_code} da diem danh trong ca nay!")
-            conn.close()
-            return {
-            "status": "already",
-            "message": f"Sinh vien {student_code} da diem danh trong ca nay!"}
-
-        # Lưu bản ghi mới
-        sql = """
-            INSERT INTO attendance_records (student_id, session_id, status, confidence, image_url)
-            VALUES (%s, %s, %s, %s, %s)
-        """
-        cursor.execute(sql, (student_id, session_id, status, confidence, recognized_face_image_path))
-        conn.commit()
-        conn.close()
-        print(f"✅ Điểm danh thành công cho {student_code} ({session_name}) - {status}")
-        
-        return {
-            "status": "ok",
-            "message": f"Diem danh thanh cong."
-        }
-    except Exception as e:
-        print("❌ Lỗi khi lưu điểm danh:", e)
-
 
 # ======================
 # Main
