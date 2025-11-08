@@ -5,15 +5,16 @@
   --primary-color: #4154f1;
   --secondary-color: #00c951;
   --danger-color: #fb2c36;
-  --warning-color: #F59E0B;
-  --text-primary: #1F2937;
-  --text-secondary: #6B7280;
-  --bg-primary: #FFFFFF;
+  --warning-color: #f59e0b;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --bg-primary: #ffffff;
   --bg-secondary: #f0f4fb;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-secondary);
@@ -203,7 +204,6 @@ body {
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -256,7 +256,7 @@ body {
 /* Loading spinner */
 .spinner {
   border: 3px solid rgba(79, 70, 229, 0.1);
-  border-top: 3px solid #4F46E5;
+  border-top: 3px solid #4f46e5;
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -290,14 +290,14 @@ table {
 }
 
 thead {
-  background-color: #F9FAFB;
+  background-color: #f9fafb;
 }
 
 th {
   font-weight: 600;
   text-align: left;
   padding: 12px 24px;
-  color: #6B7280;
+  color: #6b7280;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -305,11 +305,11 @@ th {
 
 td {
   padding: 16px 24px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 tr:hover {
-  background-color: #F9FAFB;
+  background-color: #f9fafb;
 }
 
 /* Modal overlay */
@@ -330,7 +330,8 @@ tr:hover {
   right: 1rem;
   background: white;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   padding: 1rem;
   z-index: 50;
   animation: fadeIn 0.3s ease-in-out;
@@ -338,55 +339,33 @@ tr:hover {
 }
 
 .toast-success {
-  border-left: 4px solid #10B981;
+  border-left: 4px solid #10b981;
 }
 
 .toast-error {
-  border-left: 4px solid #EF4444;
+  border-left: 4px solid #ef4444;
 }
 
 .toast-warning {
-  border-left: 4px solid #F59E0B;
+  border-left: 4px solid #f59e0b;
 }
 
 .toast-info {
-  border-left: 4px solid #3B82F6;
+  border-left: 4px solid #3b82f6;
 }
 
-/* Camera preview */
-.camera-preview {
-  aspect-ratio: 16 / 9;
-  background-color: #111827;
-  border-radius: 0.5rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.camera-preview video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Face detection box */
-.face-box {
-  position: absolute;
-  border: 3px solid #10B981;
-  border-radius: 8px;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
-  animation: pulse-ring 2s infinite;
-}
+/* Camera preview styles removed (camera feature deleted) */
 
 /* Skeleton loading */
 .skeleton {
-  background-color: #E5E7EB;
+  background-color: #e5e7eb;
   border-radius: 0.25rem;
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .skeleton-text {
   height: 1rem;
-  background-color: #E5E7EB;
+  background-color: #e5e7eb;
   border-radius: 0.25rem;
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -394,7 +373,7 @@ tr:hover {
 .skeleton-avatar {
   width: 3rem;
   height: 3rem;
-  background-color: #E5E7EB;
+  background-color: #e5e7eb;
   border-radius: 9999px;
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
