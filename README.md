@@ -1,26 +1,15 @@
 ### 5. Chạy server Flask
 
 1. Vào thư mục server và tạo virtualenv:
-
-```powershell
-cd Server\server
-py -3.10 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-2. Tạo file env từ mẫu (có sẵn ở root `.env.example`) và copy vào từng service:
-
-````powershell
-# Copy mẫu vào backend
-copy ..\.env.example .\Server\server\.env
-
-3. Cài dependencies và chạy server:
-
-```powershell
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-python app.py
-````
+   git clone ...
+   cd Server/server
+   py -3.10 -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   copy ..\.env.example .env ← sửa thông tin DB trong .env
+   python -m pip install --upgrade pip
+   pip install -r requirements.txt
+   pip install .\dlib-19.24.1-cp310-cp310-win_amd64.whl
+   python app.py
 
 Server sẽ chạy tại: http://localhost:5000
 
