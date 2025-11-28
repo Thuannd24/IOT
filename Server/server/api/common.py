@@ -26,6 +26,7 @@ DETECT_MODEL   = os.environ.get('DETECT_MODEL', 'hog')
 # ====== In-memory ======
 KNOWN = {"names": [], "encs": []}
 
+
 # ====== Utils ======
 def ensure_dirs():
     os.makedirs(STATIC_STUDENTS, exist_ok=True)

@@ -2,10 +2,11 @@
 
 1. Vào thư mục server và tạo virtualenv:
    git clone ...
+   copy ..\.env.example .env ← sửa thông tin DB trong .env
    cd Server/server
    py -3.10 -m venv .venv
    .\.venv\Scripts\Activate.ps1
-   copy ..\.env.example .env ← sửa thông tin DB trong .env
+
    python -m pip install --upgrade pip
    pip install -r requirements.txt
    pip install .\dlib-19.24.1-cp310-cp310-win_amd64.whl

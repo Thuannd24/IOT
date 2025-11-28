@@ -109,21 +109,6 @@ def sessions_list():
           {where_sql}
           ORDER BY date DESC, start_time ASC, shift ASC
         """
-
-        # --- Nếu bạn muốn đúng thứ tự Sáng -> Chiều, dùng CASE (vẫn ổn nếu charset chuẩn):
-        # sql = f"""
-        #   SELECT id, DATE_FORMAT(date,'%Y-%m-%d') AS date,
-        #          session_name, shift,
-        #          TIME_FORMAT(start_time,'%H:%i:%s') AS start_time,
-        #          TIME_FORMAT(end_time,'%H:%i:%s')   AS end_time,
-        #          TIME_FORMAT(close_time,'%H:%i:%s') AS close_time
-        #   FROM attendance_sessions
-        #   {where_sql}
-        #   ORDER BY date DESC,
-        #     CASE session_name WHEN 'Sáng' THEN 0 WHEN 'Chiều' THEN 1 ELSE 2 END,
-        #     shift ASC, start_time ASC
-        # """
-
         conn, cur = db_conn(dictionary=True)
         cur.execute(sql, tuple(params))
         rows = cur.fetchall()

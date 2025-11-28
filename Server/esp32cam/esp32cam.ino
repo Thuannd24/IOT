@@ -13,9 +13,25 @@
 #define PIR_PIN 13
 #define LED_PIN 33             // optional: LED báo trạng thái (LOW=off, HIGH=on)
 
-const char* ssid     = "TP-Link_F6D2";
-const char* password = "1223334444";
-const char* serverUrl = "http://192.168.0.106:5000/api/recognitions";
+const char* ssid     = "GreenLee";
+const char* password = "1234Gl5678";
+const char* serverUrl = "http://10.56.150.207:5000/api/recognitions";
+
+// Debug WiFi connection
+void printWiFiStatus() {
+  Serial.print("WiFi Status: ");
+  switch(WiFi.status()) {
+    case WL_CONNECTED: Serial.println("Connected"); break;
+    case WL_NO_SHIELD: Serial.println("No Shield"); break;
+    case WL_IDLE_STATUS: Serial.println("Idle"); break;
+    case WL_NO_SSID_AVAIL: Serial.println("No SSID Available"); break;
+    case WL_SCAN_COMPLETED: Serial.println("Scan Completed"); break;
+    case WL_CONNECT_FAILED: Serial.println("Connect Failed"); break;
+    case WL_CONNECTION_LOST: Serial.println("Connection Lost"); break;
+    case WL_DISCONNECTED: Serial.println("Disconnected"); break;
+    default: Serial.println("Unknown"); break;
+  }
+}
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);    // Đổi 0x27 -> 0x3F nếu LCD khác
 const int SDA_PIN = 14;
@@ -54,20 +70,34 @@ void ensureWifi() {
   if (now - lastWifiTry < WIFI_RETRY_EVERY) return;
 
   lastWifiTry = now;
+  Serial.println("=== WiFi Reconnection Attempt ===");
+  printWiFiStatus();
+  
   lcd2("Dang ket noi WiFi", "");
   WiFi.disconnect(true, true);
+  delay(100);
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
+  
+  Serial.print("Connecting to: "); Serial.println(ssid);
   WiFi.begin(ssid, password);
 
   unsigned long t0 = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - t0 < 12000) {
-    delay(250);
+    delay(500);
+    Serial.print(".");
+    printWiFiStatus();
   }
+  Serial.println();
+  
   if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("WiFi connected! IP: ");
+    Serial.println(WiFi.localIP());
     lcd2("WiFi OK", WiFi.localIP().toString());
     delay(700);
   } else {
+    Serial.println("WiFi connection failed!");
+    printWiFiStatus();
     lcd2("WiFi that bai", "Thu lai sau");
     delay(600);
   }
@@ -219,6 +249,9 @@ bool captureAndRecognizeBurst(uint8_t shots = BURST_SHOTS) {
    SETUP
    ======================= */
 void setup() {
+  Serial.begin(115200);
+  Serial.println("=== ESP32-CAM Starting ===");
+  
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
@@ -231,31 +264,48 @@ void setup() {
   lcd.init();
   lcd.backlight();
   lcd2("Khoi dong...", "");
+  delay(1000);
 
   // Camera
+  Serial.println("Initializing camera...");
   if (!initCamera()) {
+    Serial.println("Camera init failed!");
     lcd2("Loi camera!", "");
     while (true) delay(1000);
   }
+  Serial.println("Camera initialized successfully");
 
   // Wi-Fi
+  Serial.println("Starting WiFi connection...");
+  Serial.print("SSID: "); Serial.println(ssid);
+  
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
   WiFi.begin(ssid, password);
   unsigned long t0 = millis();
-  lcd2("Dang ket noi WiFi", "");
-  while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
-    delay(250);
+  lcd2("Dang ket noi WiFi", ssid);
+  
+  while (WiFi.status() != WL_CONNECTED && millis() - t0 < 20000) {
+    delay(500);
+    Serial.print(".");
+    printWiFiStatus();
   }
+  Serial.println();
+  
   if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("WiFi connected successfully! IP: ");
+    Serial.println(WiFi.localIP());
     lcd2("WiFi OK", WiFi.localIP().toString());
-    delay(700);
+    delay(2000);
   } else {
-    lcd2("WiFi that bai", "Thu ket noi lai");
-    delay(700);
+    Serial.println("WiFi connection failed after timeout!");
+    printWiFiStatus();
+    lcd2("WiFi that bai", "Kiem tra SSID/Pass");
+    delay(3000);
   }
 
   lcd2("San sang", "Cho nguoi den");
+  Serial.println("=== Setup Complete ===");
 }
 
 /* =======================

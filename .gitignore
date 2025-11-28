@@ -1,12 +1,18 @@
 # Environment / secrets
 .env
-.env.*
 
-# Local python virtualenvs
+# Virtual environments
+.venv/
+venv/
 myenv/
 **/myenv/
+**/.venv/
+**/venv/
 
 # Python build / packaging
+__pycache__/
+*.py[cod]
+*$py.class
 build/
 dist/
 *.egg-info/
@@ -28,6 +34,15 @@ Thumbs.db
 dist/
 .vite/
 node_modules/
+
+# Image uploads (keep repo clean)
+Server/server/static/attendance_faces/*.jpg
+Server/server/static/attendance_faces/*.png
+Server/server/static/debug_images/*.jpg
+Server/server/static/debug_images/*.png
+
+# Logs
+*.log
 *.log
 # Do NOT include global image ignores unless intentional
 # (remove the following if you want to track images)
